@@ -1,0 +1,196 @@
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f6f8fa;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    max-width: 1200px;
+    margin: 32px auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 32px 24px 24px 24px;
+}
+h2 {
+    margin-top: 0;
+    color: #2d3a4a;
+    letter-spacing: 1px;
+}
+.filters-container {
+    margin-bottom: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+}
+.filters-container label, .filters-container button {
+    font-size: 1rem;
+}
+#column-filters {
+    margin-bottom: 18px;
+}
+.filters-container button, button {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 18px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.filters-container button:hover, button:hover {
+    background: #1741a6;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+th, td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+th {
+    background: #f1f5f9;
+    color: #374151;
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+tr:last-child td {
+    border-bottom: none;
+}
+tr:hover td {
+    background: #f3f6fa;
+}
+/* Dropdown filter styles */
+#column-filters > div > div {
+    margin-bottom: 0;
+}
+#column-filters button {
+    background: #f1f5f9;
+    color: #374151;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+#column-filters button:hover {
+    background: #e0e7ef;
+}
+#column-filters div[style*="position: absolute"] {
+    min-width: 180px;
+}
+#column-filters label {
+    font-size: 0.97rem;
+    color: #374151;
+    margin-bottom: 2px;
+}
+#column-filters input[type="text"] {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 1rem;
+    margin-top: 2px;
+}
+#column-filters input[type="checkbox"] {
+    accent-color: #2563eb;
+}
+
+/* Make date and Janma Rashi inputs bigger */
+.filters-container input[type="date"],
+.filters-container select#janma-rashi {
+        font-size: 1.25rem;
+        padding: 7px 12px;
+        min-width: 180px;
+}
+
+/* Responsive styles */
+@media (max-width: 900px) {
+    .container {
+        padding: 18px 4vw 16px 4vw;
+        max-width: 98vw;
+    }
+    table, th, td {
+        font-size: 0.98rem;
+    }
+    .filters-container {
+        gap: 10px;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 8px 2vw 8px 2vw;
+        margin: 8px 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    h2 {
+        font-size: 1.2rem;
+        text-align: center;
+    }
+    .filters-container {
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+    #column-filters > div {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    #column-filters button, .filters-container button, button {
+        width: 100%;
+        min-width: 0;
+        font-size: 1rem;
+        padding: 10px 0;
+    }
+    #column-filters div[style*="position: absolute"] {
+        min-width: 90vw;
+        left: 0 !important;
+        right: 0 !important;
+        margin: 0 auto;
+    }
+    table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    thead tr {
+        display: none;
+    }
+    tr {
+        margin-bottom: 12px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        padding: 8px 0;
+    }
+    td {
+        border: none;
+        border-bottom: 1px solid #e5e7eb;
+        position: relative;
+        padding-left: 48%;
+        min-height: 36px;
+        font-size: 1rem;
+    }
+    td:before {
+        position: absolute;
+        top: 0;
+        left: 8px;
+        width: 45%;
+        white-space: pre-wrap;
+        font-weight: bold;
+        color: #374151;
+        content: attr(data-label);
+        font-size: 0.97rem;
+    }
+    td:last-child {
+        border-bottom: none;
+    }
+}

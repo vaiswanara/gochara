@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gochara Table</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; align-items: center; margin-bottom: 18px;">
+            <a href="https://vaiswanara.com" style="display: flex; align-items: center; text-decoration: none;">
+                <img src="logo.gif" alt="Logo" style="height: 48px; margin-right: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                <span style="font-size: 2rem; color: #2d3a4a; font-weight: 600; letter-spacing: 1px;">Vaiswanara</span>
+            </a>
+        </div>
+        <div style="height: 18px;"></div>
+        <h1 style="text-align: center;">Gochara(Transit) Table</h1>
+        <div class="filters-container">
+            <label>From Date: <input type="date" id="from-date"></label>
+            <label>To Date: <input type="date" id="to-date"></label>
+            <label>Janma Rashi:
+                <select id="janma-rashi">
+                    <option value="">Select Rashi</option>
+                    <option value="1">Mesha</option>
+                    <option value="2">Vrushabha</option>
+                    <option value="3">Mithuna</option>
+                    <option value="4">Karka</option>
+                    <option value="5">Simha</option>
+                    <option value="6">Kanya</option>
+                    <option value="7">Tula</option>
+                    <option value="8">Vrischika</option>
+                    <option value="9">Dhanu</option>
+                    <option value="10">Makara</option>
+                    <option value="11">Kumbha</option>
+                    <option value="12">Meena</option>
+                </select>
+            </label>
+            <button id="fetch-btn">Fetch Details</button>
+        </div>
+        <div id="column-filters"></div>
+        <div id="result-filter-container"></div>
+        <table id="data-table">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
