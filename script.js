@@ -59,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const grahaOrder = ['Surya', 'Kuja', 'Budha', 'Guru', 'Sukra', 'Shani', 'Rahu'];
     // Columns to hide filters for (add Pada, Navamsha)
     const hideFilterCols = ['﻿Date', 'Longitude', 'Speed', 'Pada', 'Navamsha'];
+    // Remove Navamsha from headers so it doesn't show in table
+    headers = headers.filter(h => h !== 'Navamsha');
         const filterRow = document.createElement('div');
         filterRow.style.display = 'flex';
         filterRow.style.gap = '16px';
@@ -309,14 +311,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const displayNames = allHeaders.map(h => {
             if (h === 'Rashi') return 'Rashi (Sign)';
             if (h === 'Nakshatra') return 'Nakshatra (Star)';
-            if (h === 'Navamsha') return 'Navamsha (Sign)';
-            return h.replace(/^/, '');
+            return h.replace(/^\u000b/, '');
         });
         thead.innerHTML = '<tr>' + displayNames.map(name => `<th>${name}</th>`).join('') + '</tr>';
         tbody.innerHTML = rows.map(row => {
             const tds = headers.map((h, i) => {
                 let val = row[h];
-                if (h === 'Rashi' || h === 'Navamsha') val = rashiNames[row[h]] || row[h];
+                if (h === 'Rashi') val = rashiNames[row[h]] || row[h];
                 if (h === 'Nakshatra') val = nakshatraNames[row[h]] || row[h];
                 return `<td data-label="${displayNames[i]}">${val}</td>`;
             });
