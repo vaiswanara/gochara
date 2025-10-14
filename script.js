@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let data = [];
     let headers = [];
     let transitResults = {};
+    let gocharaData = {}; // { planetLower: { transit_no: {Gochara_Phala, Reference} } }
     let columnFilters = {};
 
     // Fetch planet transit results JSON and map for quick lookup
@@ -36,6 +37,27 @@ document.addEventListener('DOMContentLoaded', () => {
             for (const planet of json.planets) {
                 transitResults[planet.name.trim().toLowerCase()] = planet;
             }
+        });
+
+    // Fetch and parse Gochara_phala.csv into gocharaData for quick lookup
+    fetch('Gochara_phala.csv')
+        .then(response => response.text())
+        .then(text => {
+            const rows = parseCSV(text);
+            // Expect header: Graha,Transit_Rashi_no,Gochara_Phala,Reference
+            rows.forEach(r => {
+                const graha = (r['Graha'] || '').trim();
+                const transitNo = r['Transit_Rashi_no'] ? String(r['Transit_Rashi_no']).trim() : '';
+                const phala = r['Gochara_Phala'] || '';
+                const ref = r['Reference'] || '';
+                if (!graha || !transitNo) return;
+                const key = graha.toLowerCase();
+                if (!gocharaData[key]) gocharaData[key] = {};
+                gocharaData[key][transitNo] = { Gochara_Phala: phala, Reference: ref };
+            });
+        })
+        .catch(err => {
+            console.error('Failed to load Gochara_phala.csv', err);
         });
 
     fetchBtn.addEventListener('click', () => {
@@ -305,8 +327,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderTable(rows, janmaRashi) {
         if (!headers.length) return;
-        // Add Results column
-        const allHeaders = [...headers, 'Result'];
+        // Add Results and Info columns
+        const allHeaders = [...headers, 'Result', 'Info'];
         // For mobile: use display names for data-labels
         const displayNames = allHeaders.map(h => {
             if (h === 'Rashi') return 'Rashi (Sign)';
@@ -322,6 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `<td data-label="${displayNames[i]}">${val}</td>`;
             });
             let result = '';
+            let infoCell = '';
             if (janmaRashi && row['Rashi'] && row['Graha']) {
                 const planetName = row['Graha'].trim().toLowerCase();
                 const planetData = transitResults[planetName];
@@ -335,11 +358,120 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         result = '-';
                     }
+                    // Lookup gochara data by planet and transit number
+                    const gdataForPlanet = gocharaData[planetName];
+                    const distStr = String(dist);
+                    if (gdataForPlanet && gdataForPlanet[distStr]) {
+                        // render an info button with data attributes
+                        const safePhala = escapeHtml(gdataForPlanet[distStr].Gochara_Phala || '');
+                        const safeRef = escapeHtml(gdataForPlanet[distStr].Reference || '');
+                        infoCell = `<td data-label="${displayNames[displayNames.length-1]}">` +
+                                   `<button class="info-btn" data-planet="${planetName}" data-dist="${distStr}" ` +
+                                   `data-phala="${safePhala}" data-ref="${safeRef}" style="cursor:pointer">&#x2139;</button></td>`;
+                    } else {
+                        infoCell = `<td data-label="${displayNames[displayNames.length-1]}"></td>`;
+                    }
                 }
             }
             tds.push(`<td data-label="${displayNames[displayNames.length-1]}">${result}</td>`);
+            // Append the info cell (already contains a td)
+            tds.push(infoCell);
             return '<tr>' + tds.join('') + '</tr>';
         }).join('');
+
+        // Attach click handlers to info buttons for popover display
+        // Use event delegation on tbody to avoid re-querying too much
+        const existingPopover = document.querySelector('.info-popover');
+        if (existingPopover) existingPopover.remove();
+        tbody.querySelectorAll('.info-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Remove any existing popover
+                document.querySelectorAll('.info-popover').forEach(p => p.remove());
+                const planet = btn.getAttribute('data-planet');
+                const dist = btn.getAttribute('data-dist');
+                const phala = btn.getAttribute('data-phala');
+                const ref = btn.getAttribute('data-ref');
+                const pop = document.createElement('div');
+                pop.className = 'info-popover';
+                pop.style.position = 'absolute';
+                pop.style.background = '#fff';
+                pop.style.border = '1px solid #ccc';
+                pop.style.padding = '12px';
+                pop.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
+                pop.style.zIndex = 2000;
+                pop.innerHTML = `<div style="font-weight:700;margin-bottom:6px">Transit Rashi #: ${dist}</div>` +
+                                `<div style="margin-bottom:6px"><strong>Gochara Phala:</strong><div>${phala}</div></div>` +
+                                `<div><strong>Reference:</strong><div>${ref}</div></div>`;
+                document.body.appendChild(pop);
+                // Position near button
+                const rect = btn.getBoundingClientRect();
+                pop.style.left = Math.min(window.innerWidth - 320, rect.left + window.scrollX) + 'px';
+                pop.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+                // Close on outside click
+                const closeOnOutside = (ev) => {
+                    if (!pop.contains(ev.target) && ev.target !== btn) {
+                        pop.remove();
+                        document.removeEventListener('click', closeOnOutside);
+                    }
+                };
+                document.addEventListener('click', closeOnOutside);
+            });
+        });
+    }
+
+    // Simple CSV parser that handles quoted fields and returns array of objects
+    function parseCSV(text) {
+        const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+        if (!lines.length) return [];
+        // Split header
+        const headers = splitCSVLine(lines[0]).map(h => h.replace(/\uFEFF/g, '').trim());
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            const parts = splitCSVLine(lines[i]);
+            if (parts.length === 0) continue;
+            const obj = {};
+            for (let j = 0; j < headers.length; j++) {
+                obj[headers[j]] = parts[j] !== undefined ? parts[j] : '';
+            }
+            rows.push(obj);
+        }
+        return rows;
+    }
+
+    // Splits a CSV line into fields, handling double-quoted fields
+    function splitCSVLine(line) {
+        const res = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                // Peek next char for escaped quote
+                if (inQuotes && line[i+1] === '"') {
+                    cur += '"';
+                    i++; // skip escaped quote
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (ch === ',' && !inQuotes) {
+                res.push(cur);
+                cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        res.push(cur);
+        return res.map(s => s.trim());
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     function parseDate(str) {
