@@ -44,16 +44,18 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(response => response.text())
         .then(text => {
             const rows = parseCSV(text);
-            // Expect header: Graha,Transit_Rashi_no,Gochara_Phala,Reference
+            // Expect header: Graha,Transit_Rashi_no,Gochara_Phala,Reference,translation
             rows.forEach(r => {
                 const graha = (r['Graha'] || '').trim();
                 const transitNo = r['Transit_Rashi_no'] ? String(r['Transit_Rashi_no']).trim() : '';
                 const phala = r['Gochara_Phala'] || '';
                 const ref = r['Reference'] || '';
+                // new translation column (lowercase 'translation' in CSV header)
+                const translation = r['translation'] || r['Translation'] || '';
                 if (!graha || !transitNo) return;
                 const key = graha.toLowerCase();
                 if (!gocharaData[key]) gocharaData[key] = {};
-                gocharaData[key][transitNo] = { Gochara_Phala: phala, Reference: ref };
+                gocharaData[key][transitNo] = { Gochara_Phala: phala, Reference: ref, Translation: translation };
             });
         })
         .catch(err => {
@@ -362,12 +364,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const gdataForPlanet = gocharaData[planetName];
                     const distStr = String(dist);
                     if (gdataForPlanet && gdataForPlanet[distStr]) {
-                        // render an info button with data attributes
-                        const safePhala = escapeHtml(gdataForPlanet[distStr].Gochara_Phala || '');
+                        // render an info button with data attributes (include translation)
                         const safeRef = escapeHtml(gdataForPlanet[distStr].Reference || '');
+                        const safeTrans = escapeHtml(gdataForPlanet[distStr].Translation || '');
                         infoCell = `<td data-label="${displayNames[displayNames.length-1]}">` +
                                    `<button class="info-btn" data-planet="${planetName}" data-dist="${distStr}" ` +
-                                   `data-phala="${safePhala}" data-ref="${safeRef}" style="cursor:pointer">&#x2139;</button></td>`;
+                                   `data-ref="${safeRef}" data-trans="${safeTrans}" style="cursor:pointer">&#x2139;</button></td>`;
                     } else {
                         infoCell = `<td data-label="${displayNames[displayNames.length-1]}"></td>`;
                     }
@@ -392,6 +394,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dist = btn.getAttribute('data-dist');
                 const phala = btn.getAttribute('data-phala');
                 const ref = btn.getAttribute('data-ref');
+                // Use original planet name (Sanskrit) — capitalize first letter of stored key
+                const planetRaw = planet || '';
+                const planetDisplay = planetRaw ? (planetRaw.charAt(0).toUpperCase() + planetRaw.slice(1)) : '';
                 const pop = document.createElement('div');
                 pop.className = 'info-popover';
                 pop.style.position = 'absolute';
@@ -400,9 +405,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 pop.style.padding = '12px';
                 pop.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
                 pop.style.zIndex = 2000;
-                pop.innerHTML = `<div style="font-weight:700;margin-bottom:6px">Transit Rashi #: ${dist}</div>` +
-                                `<div style="margin-bottom:6px"><strong>Gochara Phala:</strong><div>${phala}</div></div>` +
-                                `<div><strong>Reference:</strong><div>${ref}</div></div>`;
+                pop.innerHTML = `<div style="font-weight:700;margin-bottom:6px">${planetDisplay} Transits Rashi #: ${dist}</div>` +
+                                `<div style="margin-bottom:6px"><strong>Reference (Sanskrit):</strong><div>${ref}</div></div>` +
+                                (btn.getAttribute('data-trans') ? `<div><strong>Translation (English):</strong><div>${btn.getAttribute('data-trans')}</div></div>` : '');
                 document.body.appendChild(pop);
                 // Position near button
                 const rect = btn.getBoundingClientRect();

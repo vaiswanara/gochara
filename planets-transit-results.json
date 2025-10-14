@@ -23,11 +23,11 @@
     {
       "name": "Shani",
       "positiveTransit": [3, 6, 11],
-      "negativeTransit": [1, 2, 4, 5, 7, 8, 10, 12]
+      "negativeTransit": [1, 2, 4, 5, 7, 8,9, 10, 12]
     },
     {
       "name": "Budha",
-      "positiveTransit": [4, 6, 8, 10, 11],
+      "positiveTransit": [2, 4, 6, 8, 10, 11],
       "negativeTransit": [1, 3, 5, 7, 9, 12]
     },
     {
