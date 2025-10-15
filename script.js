@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const janmaRashiInput = document.getElementById('janma-rashi');
     const fetchBtn = document.getElementById('fetch-btn');
     const columnFiltersDiv = document.getElementById('column-filters');
+    const exportPdfBtn = document.getElementById('export-pdf');
 
     let data = [];
     let headers = [];
@@ -62,15 +63,43 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Failed to load Gochara_phala.csv', err);
         });
 
-    fetchBtn.addEventListener('click', () => {
-        fetch('Ephemeris.json')
-            .then(response => response.json())
-            .then(json => {
-                data = json;
-                headers = Object.keys(data[0]);
-                setupColumnFilters();
-                filterAndRender();
-            });
+    fetchBtn.addEventListener('click', async () => {
+        // Loading state
+        const originalText = fetchBtn.textContent;
+        fetchBtn.textContent = 'Loading...';
+        fetchBtn.disabled = true;
+        try {
+            const response = await fetch('Ephemeris.json');
+            const json = await response.json();
+            data = json;
+            headers = Object.keys(data[0] || {});
+            setupColumnFilters();
+            filterAndRender();
+        } catch (e) {
+            console.error('Failed to load Ephemeris.json', e);
+        } finally {
+            fetchBtn.textContent = originalText;
+            fetchBtn.disabled = false;
+        }
+    });
+
+    // Default dates: if empty on load, set From = today, To = today + 30
+    setDefaultDatesIfEmpty();
+
+    // Export PDF of current filtered rows
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener('click', () => {
+            exportFilteredTableToPDF();
+        });
+    }
+
+    // Persist/restore filters
+    restoreFilters();
+    [fromDateInput, toDateInput, janmaRashiInput].forEach(ctrl => {
+        if (!ctrl) return;
+        ctrl.addEventListener('change', () => {
+            saveFilters();
+        });
     });
 
     function setupColumnFilters() {
@@ -324,7 +353,167 @@ document.addEventListener('DOMContentLoaded', () => {
                 return resultVals.includes(result);
             });
         }
+        // Remember latest filtered for export
+        lastFilteredRows = filtered;
         renderTable(filtered, janmaRashi);
+    }
+
+    function saveFilters() {
+        const payload = {
+            from: fromDateInput.value || '',
+            to: toDateInput.value || '',
+            janma: janmaRashiInput.value || ''
+        };
+        try { localStorage.setItem('gochara_filters', JSON.stringify(payload)); } catch {}
+    }
+
+    function restoreFilters() {
+        try {
+            const raw = localStorage.getItem('gochara_filters');
+            if (!raw) return;
+            const obj = JSON.parse(raw);
+            if (obj.from !== undefined) fromDateInput.value = obj.from;
+            if (obj.to !== undefined) toDateInput.value = obj.to;
+            if (obj.janma !== undefined) janmaRashiInput.value = obj.janma;
+        } catch {}
+    }
+
+    function setDefaultDatesIfEmpty() {
+        const today = new Date();
+        const in30 = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        if (!fromDateInput.value) fromDateInput.value = fmt(today);
+        if (!toDateInput.value) toDateInput.value = fmt(in30);
+    }
+
+    // Returns filtered rows based on current UI without re-rendering
+    let lastFilteredRows = [];
+    function getCurrentFilteredRows() {
+        return Array.isArray(lastFilteredRows) ? lastFilteredRows : [];
+    }
+
+    function exportRowsToCSV(rows) {
+        if (!rows || rows.length === 0) {
+            alert('No data to export.');
+            return;
+        }
+        // Use headers (with Navamsha removed already in render) plus Result
+        const cols = [...headers, 'Result'];
+        const csvRows = [];
+        csvRows.push(cols.join(','));
+        rows.forEach(row => {
+            const janmaRashi = janmaRashiInput.value;
+            const planetName = (row['Graha'] || '').trim().toLowerCase();
+            let result = '';
+            const planetData = transitResults[planetName];
+            if (janmaRashi && planetData && row['Rashi']) {
+                const dist = ((parseInt(row['Rashi']) - parseInt(janmaRashi) + 12) % 12) + 1;
+                if (planetData.positiveTransit.includes(dist)) result = 'Ausp';
+                else if (planetData.negativeTransit.includes(dist)) result = 'In-Ausp';
+                else result = '-';
+            }
+            const line = cols.map(c => {
+                let v = c === 'Result' ? result : row[c];
+                if (v === undefined || v === null) v = '';
+                v = String(v).replace(/"/g, '""');
+                if (/[",\n]/.test(v)) v = '"' + v + '"';
+                return v;
+            }).join(',');
+            csvRows.push(line);
+        });
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        a.download = `gochara_export_${yyyy}${mm}${dd}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function exportFilteredTableToPDF() {
+        if (!lastFilteredRows || lastFilteredRows.length === 0) {
+            alert('No data to export.');
+            return;
+        }
+        const janmaRashi = janmaRashiInput.value;
+        const computeResult = (row) => {
+            const planetName = (row['Graha'] || '').trim().toLowerCase();
+            const planetData = transitResults[planetName];
+            if (janmaRashi && planetData && row['Rashi']) {
+                const dist = ((parseInt(row['Rashi']) - parseInt(janmaRashi) + 12) % 12) + 1;
+                if (planetData.positiveTransit.includes(dist)) return 'Ausp';
+                if (planetData.negativeTransit.includes(dist)) return 'In-Ausp';
+                return '-';
+            }
+            return '';
+        };
+        const computeEnglishRef = (row) => {
+            const planetName = (row['Graha'] || '').trim().toLowerCase();
+            const dist = (janmaRashi && row['Rashi']) ? (((parseInt(row['Rashi']) - parseInt(janmaRashi) + 12) % 12) + 1) : null;
+            const planetData = gocharaData[planetName];
+            if (planetData && dist != null) {
+                const entry = planetData[String(dist)];
+                if (entry && entry.Translation) return entry.Translation;
+            }
+            return '';
+        };
+        // Columns for PDF (autosized) with renamed headers
+        const cols = ['Date', 'Graha', 'Disha', 'Changes', 'Rashi', 'Result', 'Reference_Text'];
+        const tableHead = '<tr>' + cols.map((c, i) => `<th class="col-${i}">${c}</th>`).join('') + '</tr>';
+        const tableBody = lastFilteredRows.map(row => {
+            const dateVal = row['\uFEFFDate'] || row['﻿Date'] || row['Date'] || '';
+            const rashiName = rashiNames[row['Rashi']] || row['Rashi'] || '';
+            const resultVal = computeResult(row);
+            const engRef = computeEnglishRef(row);
+            const cells = [
+                dateVal,
+                row['Graha'] || '',
+                row['Direction'] || '',
+                row['Changes'] || '',
+                rashiName,
+                resultVal,
+                engRef
+            ].map((v, idx) => `<td class="col-${idx}">${v == null ? '' : String(v)}</td>`).join('');
+            return `<tr>${cells}</tr>`;
+        }).join('');
+        const win = window.open('', '_blank');
+        if (!win) return;
+        win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Gochara Export</title>
+        <style>
+            @page { size: A4 portrait; margin: 10mm; }
+            body{font-family:Segoe UI,Arial,sans-serif;padding:0;color:#111827}
+            h1{font-size:18px;margin:0 0 4px 0;text-align:center}
+            .meta{font-size:11px;color:#374151;margin:0 0 8px 0;text-align:center}
+            table{border-collapse:collapse;width:100%;font-size:11px;table-layout:auto;border-spacing:0}
+            th,td{border:1px solid #e5e7eb;padding:4px 6px;text-align:center;vertical-align:top;white-space:normal;word-break:break-word;line-height:1.25}
+            th{background:#f3f4f6;text-align:center}
+            /* Column width guidance (slightly reduced for Date, Graha, Disha, Rashi) */
+            .col-0{width:10%}
+            .col-1{width:9%}
+            .col-2{width:8%}
+            .col-3{width:12%}
+            .col-4{width:10%}
+            .col-5{width:11%}
+            .col-6{width:40%}
+            /* Emphasis */
+            td.col-0{font-weight:700;color:#92400e}
+            td.col-5{font-weight:700}
+            /* No row splits across pages */
+            tr{page-break-inside:avoid}
+        </style>
+        </head><body>`);
+        const meta = `From: ${fromDateInput.value || '-'} | To: ${toDateInput.value || '-'} | Janma Rashi: ${janmaRashi || '-'}`;
+        win.document.write(`<h1>Gochara (Transit) Export</h1><div class="meta">${meta}</div><table><thead>${tableHead}</thead><tbody>${tableBody}</tbody></table>`);
+        win.document.write('</body></html>');
+        win.document.close();
+        win.focus();
+        win.print();
     }
 
     function renderTable(rows, janmaRashi) {
@@ -338,6 +527,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return h.replace(/^\u000b/, '');
         });
         thead.innerHTML = '<tr>' + displayNames.map(name => `<th>${name}</th>`).join('') + '</tr>';
+        if (!rows || rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${allHeaders.length}" style="text-align:center;color:#64748b;padding:18px">No records match the selected filters.</td></tr>`;
+            return;
+        }
         tbody.innerHTML = rows.map(row => {
             const tds = headers.map((h, i) => {
                 let val = row[h];
@@ -368,14 +561,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         const safeRef = escapeHtml(gdataForPlanet[distStr].Reference || '');
                         const safeTrans = escapeHtml(gdataForPlanet[distStr].Translation || '');
                         infoCell = `<td data-label="${displayNames[displayNames.length-1]}">` +
-                                   `<button class="info-btn" data-planet="${planetName}" data-dist="${distStr}" ` +
+                                   `<button class="info-btn" aria-label="Show transit info" title="Show transit info" data-planet="${planetName}" data-dist="${distStr}" ` +
                                    `data-ref="${safeRef}" data-trans="${safeTrans}" style="cursor:pointer">&#x2139;</button></td>`;
                     } else {
                         infoCell = `<td data-label="${displayNames[displayNames.length-1]}"></td>`;
                     }
                 }
             }
-            tds.push(`<td data-label="${displayNames[displayNames.length-1]}">${result}</td>`);
+            // Render result badge
+            const badgeClass = result === 'Ausp' ? 'badge badge-positive' : (result === 'In-Ausp' ? 'badge badge-negative' : 'badge badge-neutral');
+            const resultHtml = result ? `<span class="${badgeClass}">${result}</span>` : '';
+            tds.push(`<td data-label="${displayNames[displayNames.length-1]}">${resultHtml}</td>`);
             // Append the info cell (already contains a td)
             tds.push(infoCell);
             return '<tr>' + tds.join('') + '</tr>';

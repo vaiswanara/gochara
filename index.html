@@ -8,19 +8,26 @@
 </head>
 <body>
     <div class="container">
-        <div style="display: flex; align-items: center; margin-bottom: 18px;">
-            <a href="https://vaiswanara.com" style="display: flex; align-items: center; text-decoration: none;">
-                <img src="logo.gif" alt="Logo" style="height: 48px; margin-right: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-                <span style="font-size: 2rem; color: #2d3a4a; font-weight: 600; letter-spacing: 1px;">Vaiswanara</span>
+        <div class="brand-bar">
+            <a class="brand-link" href="https://vaiswanara.com">
+                <img class="brand-logo" src="logo.gif" alt="Vaiswanara Logo">
+                <span class="brand-name">Vaiswanara</span>
             </a>
         </div>
-        <div style="height: 18px;"></div>
-        <h1 style="text-align: center;">Gochara(Transit) Table</h1>
+        <h1 class="page-title">Gochara (Transit) Table</h1>
+        <div class="filters-sticky-stack">
         <div class="filters-container">
-            <label>From Date: <input type="date" id="from-date"></label>
-            <label>To Date: <input type="date" id="to-date"></label>
-            <label>Janma Rashi:
-                <select id="janma-rashi">
+            <label class="field">
+                <span class="field-label">From Date</span>
+                <input class="input" type="date" id="from-date">
+            </label>
+            <label class="field">
+                <span class="field-label">To Date</span>
+                <input class="input" type="date" id="to-date">
+            </label>
+            <label class="field">
+                <span class="field-label">Janma Rashi</span>
+                <select class="select" id="janma-rashi">
                     <option value="">Select Rashi</option>
                     <option value="1">Mesha</option>
                     <option value="2">Vrushabha</option>
@@ -36,9 +43,17 @@
                     <option value="12">Meena</option>
                 </select>
             </label>
-            <button id="fetch-btn">Fetch Details</button>
+            <div class="field">
+                <span class="field-label">&nbsp;</span>
+                <button class="button button-primary" id="fetch-btn">Fetch Details</button>
+            </div>
+            <div class="field">
+                <span class="field-label">&nbsp;</span>
+                <button class="button button-primary" id="export-pdf">Export PDF</button>
+            </div>
         </div>
         <div id="column-filters"></div>
+        </div>
         <div id="result-filter-container"></div>
         <table id="data-table">
             <thead></thead>
