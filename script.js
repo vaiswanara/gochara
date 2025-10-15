@@ -508,7 +508,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tr{page-break-inside:avoid}
         </style>
         </head><body>`);
-        const meta = `From: ${fromDateInput.value || '-'} | To: ${toDateInput.value || '-'} | Janma Rashi: ${janmaRashi || '-'}`;
+        const janmaRashiName = rashiNames[janmaRashi] || (janmaRashi || '-');
+        const meta = `From: ${fromDateInput.value || '-'} | To: ${toDateInput.value || '-'} | Janma Rashi: ${janmaRashiName}`;
         win.document.write(`<h1>Gochara (Transit) Export</h1><div class="meta">${meta}</div><table><thead>${tableHead}</thead><tbody>${tableBody}</tbody></table>`);
         win.document.write('</body></html>');
         win.document.close();
