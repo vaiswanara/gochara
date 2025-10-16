@@ -58,9 +58,8 @@ h2 {
     letter-spacing: 1px;
 }
 .filters-sticky-stack {
-    position: sticky;
-    top: 8px;
-    z-index: 60;
+    /* Sticky behaviour removed for mobile usability; keep as a simple wrapper */
+    position: static;
 }
 .filters-container {
     margin-bottom: 18px;
@@ -173,9 +172,8 @@ th, td {
     text-align: left;
 }
 th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
+    /* Table header should scroll with content on small screens to avoid obscuring values */
+    position: relative;
     background: #e2e8f0;
     color: #0f172a;
     font-weight: 700;
@@ -289,6 +287,17 @@ td[data-label="Result"] {
         flex-direction: column;
         gap: 8px;
         align-items: stretch;
+    }
+    /* Ensure labels remain visible and inputs show values clearly */
+    .field-label {
+        display: block;
+        margin-bottom: 6px;
+        color: #334155;
+        font-size: 0.95rem;
+    }
+    .filters-container .button, .filters-container button {
+        width: 100%;
+        box-sizing: border-box;
     }
     .field {
         width: 100%;
